@@ -206,10 +206,12 @@ export const DashboardPage: FC<PageProps> = ({ idOrSlug }: PageProps) => {
             dispatch(getFilterSets(id));
           }
         }
+        // @ts-ignore
         dispatch(
           hydrateDashboard(
             dashboard,
             charts,
+            // @ts-ignore
             filterboxMigrationState,
             dataMaskFromUrl,
           ),

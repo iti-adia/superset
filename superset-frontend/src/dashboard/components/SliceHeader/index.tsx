@@ -16,9 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, useMemo } from 'react';
 import { styled, t } from '@superset-ui/core';
-import { useUiConfig } from 'src/components/UiConfigContext';
 import { Tooltip } from 'src/components/Tooltip';
 import { useDispatch, useSelector } from 'react-redux';
 import EditableTitle from 'src/components/EditableTitle';
@@ -41,12 +40,11 @@ type SliceHeaderProps = SliceHeaderControlsProps & {
   filters: object;
   handleToggleFullSize: () => void;
   formData: object;
-  width: number;
-  height: number;
 };
 
 const annotationsLoading = t('Annotation layers are still loading.');
 const annotationsError = t('One ore more annotation layers failed loading.');
+
 const CrossFilterIcon = styled(Icons.CursorTarget)`
   cursor: pointer;
   color: ${({ theme }) => theme.colors.primary.base};
@@ -60,8 +58,9 @@ const SliceHeader: FC<SliceHeaderProps> = ({
   updateSliceName = () => ({}),
   toggleExpandSlice = () => ({}),
   logExploreChart = () => ({}),
-  onExploreChart,
+  exploreUrl = '#',
   exportCSV = () => ({}),
+  exportExcel = () => ({}),
   editMode = false,
   annotationQuery = {},
   annotationError = {},
@@ -73,6 +72,7 @@ const SliceHeader: FC<SliceHeaderProps> = ({
   supersetCanExplore = false,
   supersetCanShare = false,
   supersetCanCSV = false,
+  supersetCanExcel = false,
   sliceCanEdit = false,
   exportFullCSV,
   slice,
@@ -84,13 +84,8 @@ const SliceHeader: FC<SliceHeaderProps> = ({
   isFullSize,
   chartStatus,
   formData,
-  width,
-  height,
 }) => {
   const dispatch = useDispatch();
-  const uiConfig = useUiConfig();
-  const [headerTooltip, setHeaderTooltip] = useState<string | null>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
   // TODO: change to indicator field after it will be implemented
   const crossFilterValue = useSelector<RootState, any>(
     state => state.dataMask[slice?.slice_id]?.filterState?.value,
@@ -104,36 +99,21 @@ const SliceHeader: FC<SliceHeaderProps> = ({
     [crossFilterValue],
   );
 
-  useEffect(() => {
-    const headerElement = headerRef.current;
-    if (
-      headerElement &&
-      (headerElement.scrollWidth > headerElement.offsetWidth ||
-        headerElement.scrollHeight > headerElement.offsetHeight)
-    ) {
-      setHeaderTooltip(sliceName ?? null);
-    } else {
-      setHeaderTooltip(null);
-    }
-  }, [sliceName, width, height]);
-
   return (
     <div className="chart-header" data-test="slice-header" ref={innerRef}>
-      <div className="header-title" ref={headerRef}>
-        <Tooltip title={headerTooltip}>
-          <EditableTitle
-            title={
-              sliceName ||
-              (editMode
-                ? '---' // this makes an empty title clickable
-                : '')
-            }
-            canEdit={editMode}
-            emptyText=""
-            onSaveTitle={updateSliceName}
-            showTooltip={false}
-          />
-        </Tooltip>
+      <div className="header-title">
+        <EditableTitle
+          title={
+            sliceName ||
+            (editMode
+              ? '---' // this makes an empty title clickable
+              : '')
+          }
+          canEdit={editMode}
+          emptyText=""
+          onSaveTitle={updateSliceName}
+          showTooltip={false}
+        />
         {!!Object.values(annotationQuery).length && (
           <Tooltip
             id="annotations-loading-tooltip"
@@ -179,36 +159,34 @@ const SliceHeader: FC<SliceHeaderProps> = ({
                 />
               </Tooltip>
             )}
-            {!uiConfig.hideChartControls && (
-              <FiltersBadge chartId={slice.slice_id} />
-            )}
-            {!uiConfig.hideChartControls && (
-              <SliceHeaderControls
-                slice={slice}
-                isCached={isCached}
-                isExpanded={isExpanded}
-                cachedDttm={cachedDttm}
-                updatedDttm={updatedDttm}
-                toggleExpandSlice={toggleExpandSlice}
-                forceRefresh={forceRefresh}
-                logExploreChart={logExploreChart}
-                onExploreChart={onExploreChart}
-                exportCSV={exportCSV}
-                exportFullCSV={exportFullCSV}
-                supersetCanExplore={supersetCanExplore}
-                supersetCanShare={supersetCanShare}
-                supersetCanCSV={supersetCanCSV}
-                sliceCanEdit={sliceCanEdit}
-                componentId={componentId}
-                dashboardId={dashboardId}
-                addSuccessToast={addSuccessToast}
-                addDangerToast={addDangerToast}
-                handleToggleFullSize={handleToggleFullSize}
-                isFullSize={isFullSize}
-                chartStatus={chartStatus}
-                formData={formData}
-              />
-            )}
+            <FiltersBadge chartId={slice.slice_id} />
+            <SliceHeaderControls
+              slice={slice}
+              isCached={isCached}
+              isExpanded={isExpanded}
+              cachedDttm={cachedDttm}
+              updatedDttm={updatedDttm}
+              toggleExpandSlice={toggleExpandSlice}
+              forceRefresh={forceRefresh}
+              logExploreChart={logExploreChart}
+              exploreUrl={exploreUrl}
+              exportCSV={exportCSV}
+              exportExcel={exportExcel}
+              exportFullCSV={exportFullCSV}
+              supersetCanExplore={supersetCanExplore}
+              supersetCanShare={supersetCanShare}
+              supersetCanCSV={supersetCanCSV}
+              supersetCanExcel={supersetCanExcel}
+              sliceCanEdit={sliceCanEdit}
+              componentId={componentId}
+              dashboardId={dashboardId}
+              addSuccessToast={addSuccessToast}
+              addDangerToast={addDangerToast}
+              handleToggleFullSize={handleToggleFullSize}
+              isFullSize={isFullSize}
+              chartStatus={chartStatus}
+              formData={formData}
+            />
           </>
         )}
       </div>

@@ -16,27 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { ReactElement, useState } from 'react';
+import React, { useState } from 'react';
 import cx from 'classnames';
-import { QueryFormData, t } from '@superset-ui/core';
+import { t } from '@superset-ui/core';
 import Icons from 'src/components/Icons';
 import { Tooltip } from 'src/components/Tooltip';
-import { Slice } from 'src/types/Chart';
 import copyTextToClipboard from 'src/utils/copy';
-import { getChartPermalink } from 'src/utils/urlUtils';
 import withToasts from 'src/components/MessageToasts/withToasts';
+// import { useUrlShortener } from 'src/common/hooks/useUrlShortener';
+import { getChartPermalink } from 'src/utils/urlUtils';
 import EmbedCodeButton from './EmbedCodeButton';
 import { exportChart } from '../exploreUtils';
 import ExploreAdditionalActionsMenu from './ExploreAdditionalActionsMenu';
-import { ExportToCSVDropdown } from './ExportToCSVDropdown';
 
 type ActionButtonProps = {
-  prefixIcon: React.ReactElement;
-  suffixIcon?: React.ReactElement;
-  text?: string | ReactElement;
+  icon: React.ReactElement;
+  text?: string;
   tooltip: string;
   className?: string;
-  onClick?: React.MouseEventHandler<HTMLElement>;
+  onClick: React.MouseEventHandler<HTMLElement>;
   onTooltipVisibilityChange?: (visible: boolean) => void;
   'data-test'?: string;
 };
@@ -45,28 +43,18 @@ type ExploreActionButtonsProps = {
   actions: { redirectSQLLab: () => void; openPropertiesModal: () => void };
   canDownloadCSV: boolean;
   chartStatus: string;
-  latestQueryFormData: QueryFormData;
+  latestQueryFormData: {};
   queriesResponse: {};
-  slice: Slice;
+  slice: { slice_name: string };
   addDangerToast: Function;
-  addSuccessToast: Function;
 };
 
-const VIZ_TYPES_PIVOTABLE = ['pivot_table', 'pivot_table_v2'];
-
 const ActionButton = (props: ActionButtonProps) => {
-  const {
-    prefixIcon,
-    suffixIcon,
-    text,
-    tooltip,
-    className,
-    onTooltipVisibilityChange,
-    ...rest
-  } = props;
+  const { icon, text, tooltip, className, onTooltipVisibilityChange, ...rest } =
+    props;
   return (
     <Tooltip
-      id={`${prefixIcon}-tooltip`}
+      id={`${icon}-tooltip`}
       placement="top"
       title={tooltip}
       trigger={['hover']}
@@ -84,9 +72,8 @@ const ActionButton = (props: ActionButtonProps) => {
         style={{ height: 30 }}
         {...rest}
       >
-        {prefixIcon}
+        {icon}
         {text && <span style={{ marginLeft: 5 }}>{text}</span>}
-        {suffixIcon}
       </div>
     </Tooltip>
   );
@@ -100,30 +87,29 @@ const ExploreActionButtons = (props: ExploreActionButtonsProps) => {
     latestQueryFormData,
     slice,
     addDangerToast,
-    addSuccessToast,
   } = props;
 
-  const copyTooltipText = t('Copy permalink to clipboard');
+  const copyTooltipText = t('Copy chart URL to clipboard');
   const [copyTooltip, setCopyTooltip] = useState(copyTooltipText);
 
   const doCopyLink = async () => {
     try {
       setCopyTooltip(t('Loading...'));
+      // @ts-ignore
       const url = await getChartPermalink(latestQueryFormData);
       await copyTextToClipboard(url);
       setCopyTooltip(t('Copied to clipboard!'));
-      addSuccessToast(t('Copied to clipboard!'));
     } catch (error) {
-      setCopyTooltip(t('Copying permalink failed.'));
-      addDangerToast(t('Sorry, something went wrong. Try again later.'));
+      setCopyTooltip(t('Sorry, your browser does not support copying.'));
     }
   };
 
   const doShareEmail = async () => {
     try {
       const subject = t('Superset Chart');
+      // @ts-ignore
       const url = await getChartPermalink(latestQueryFormData);
-      const body = encodeURIComponent(t('%s%s', 'Check out this chart: ', url));
+      const body = t('%s%s', 'Check out this chart: ', url);
       window.location.href = `mailto:?Subject=${subject}%20&Body=${body}`;
     } catch (error) {
       addDangerToast(t('Sorry, something went wrong. Try again later.'));
@@ -133,16 +119,16 @@ const ExploreActionButtons = (props: ExploreActionButtonsProps) => {
   const doExportCSV = canDownloadCSV
     ? exportChart.bind(this, {
         formData: latestQueryFormData,
-        resultType: 'full',
+        resultType: 'results',
         resultFormat: 'csv',
       })
     : null;
 
-  const doExportCSVPivoted = canDownloadCSV
+  const doExportExcel = canDownloadCSV
     ? exportChart.bind(this, {
         formData: latestQueryFormData,
-        resultType: 'post_processed',
-        resultFormat: 'csv',
+        resultType: 'results',
+        resultFormat: 'excel',
       })
     : null;
 
@@ -156,6 +142,10 @@ const ExploreActionButtons = (props: ExploreActionButtonsProps) => {
     disabled: !canDownloadCSV,
   });
 
+  const exportToExcelClasses = cx('btn btn-default btn-sm', {
+    disabled: !canDownloadCSV,
+  });
+
   return (
     <div
       className="btn-group results"
@@ -165,7 +155,7 @@ const ExploreActionButtons = (props: ExploreActionButtonsProps) => {
       {latestQueryFormData && (
         <>
           <ActionButton
-            prefixIcon={<Icons.Link iconSize="l" />}
+            icon={<Icons.Link iconSize="l" />}
             tooltip={copyTooltip}
             onClick={doCopyLink}
             data-test="short-link-button"
@@ -174,50 +164,31 @@ const ExploreActionButtons = (props: ExploreActionButtonsProps) => {
             }
           />
           <ActionButton
-            prefixIcon={<Icons.Email iconSize="l" />}
-            tooltip={t('Share permalink by email')}
+            icon={<Icons.Email iconSize="l" />}
+            tooltip={t('Share chart by email')}
             onClick={doShareEmail}
           />
-          <EmbedCodeButton
-            formData={latestQueryFormData}
-            addDangerToast={addDangerToast}
-          />
+          <EmbedCodeButton latestQueryFormData={latestQueryFormData} />
           <ActionButton
-            prefixIcon={<Icons.FileTextOutlined iconSize="m" />}
+            icon={<Icons.FileTextOutlined iconSize="m" />}
             text=".JSON"
             tooltip={t('Export to .JSON format')}
             onClick={doExportJson}
           />
-          {VIZ_TYPES_PIVOTABLE.includes(latestQueryFormData.viz_type) ? (
-            <ExportToCSVDropdown
-              exportCSVOriginal={doExportCSV}
-              exportCSVPivoted={doExportCSVPivoted}
-            >
-              <ActionButton
-                prefixIcon={<Icons.FileExcelOutlined iconSize="m" />}
-                suffixIcon={
-                  <Icons.CaretDown
-                    iconSize="l"
-                    css={theme => `
-                    margin-left: ${theme.gridUnit}px;
-                    margin-right: ${-theme.gridUnit}px;
-                  `}
-                  />
-                }
-                text=".CSV"
-                tooltip={t('Export to .CSV format')}
-                className={exportToCSVClasses}
-              />
-            </ExportToCSVDropdown>
-          ) : (
-            <ActionButton
-              prefixIcon={<Icons.FileExcelOutlined iconSize="m" />}
-              text=".CSV"
-              tooltip={t('Export to .CSV format')}
-              onClick={doExportCSV}
-              className={exportToCSVClasses}
-            />
-          )}
+          <ActionButton
+            icon={<Icons.FileExcelOutlined iconSize="m" />}
+            text=".CSV"
+            tooltip={t('Export to .CSV format')}
+            onClick={doExportCSV}
+            className={exportToCSVClasses}
+          />
+          <ActionButton
+            icon={<Icons.FileExcelOutlined iconSize="m" />}
+            text=".XLSX"
+            tooltip={t('Export to .XLSX format')}
+            onClick={doExportExcel}
+            className={exportToExcelClasses}
+          />
         </>
       )}
       <ExploreAdditionalActionsMenu

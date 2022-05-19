@@ -26,7 +26,6 @@ export const D3_FORMAT_DOCS = t(
 // input choices & options
 export const D3_FORMAT_OPTIONS: [string, string][] = [
   [NumberFormats.SMART_NUMBER, t('Adaptive formatting')],
-  [NumberFormats.SMART_NUMBER, t('ITI - Adaptive formatting')],
   ['~g', t('Original value')],
   [',d', ',d (12345.432 => 12,345)'],
   ['.1s', '.1s (12345.432 => 10k)'],

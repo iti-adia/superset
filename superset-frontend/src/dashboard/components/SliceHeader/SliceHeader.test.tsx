@@ -33,6 +33,7 @@ jest.mock('src/dashboard/components/SliceHeaderControls', () => ({
       data-updated-dttm={props.updatedDttm}
       data-superset-can-explore={props.supersetCanExplore}
       data-superset-can-csv={props.supersetCanCSV}
+      data-superset-can-excel={props.supersetCanExcel}
       data-slice-can-edit={props.sliceCanEdit}
       data-component-id={props.componentId}
       data-dashboard-id={props.dashboardId}

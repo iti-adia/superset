@@ -24,6 +24,7 @@ class ChartDataResultFormat(str, Enum):
 
     CSV = "csv"
     JSON = "json"
+    EXCEL = "excel"
 
 
 class ChartDataResultType(str, Enum):

@@ -18,7 +18,6 @@ import { UserWithPermissionsAndRoles } from 'src/types/bootstrapTypes';
  * specific language governing permissions and limitations
  * under the License.
  */
-// @ts-ignore
 export const user: UserWithPermissionsAndRoles = {
   username: 'alpha',
   roles: {
@@ -42,6 +41,7 @@ export const user: UserWithPermissionsAndRoles = {
   userId: 5,
   email: 'alpha@alpha.com',
   isActive: true,
+  isAnonymous: false,
   permissions: {
     datasource_access: ['table1', 'table2'],
     database_access: ['db1', 'db2', 'db3'],

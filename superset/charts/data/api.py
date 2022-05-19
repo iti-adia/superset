@@ -21,7 +21,7 @@ import logging
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import simplejson
-from flask import current_app, g, make_response, request, Response
+from flask import current_app, g, make_response, request, Response, send_file
 from flask_appbuilder.api import expose, protect
 from flask_babel import gettext as _
 from marshmallow import ValidationError
@@ -47,6 +47,9 @@ from superset.utils.async_query_manager import AsyncQueryTokenException
 from superset.utils.core import create_zip, json_int_dttm_ser
 from superset.views.base import CsvResponse, generate_download_headers
 from superset.views.base_api import statsd_metrics
+from io import BytesIO
+import pandas as pd
+from datetime import datetime
 
 if TYPE_CHECKING:
     from superset.common.query_context import QueryContext
@@ -367,6 +370,21 @@ class ChartDataRestApi(ChartRestApi):
                 mimetype="application/zip",
             )
 
+        if result_format == ChartDataResultFormat.EXCEL:
+            # return the first result
+            buf = BytesIO()
+            df = pd.DataFrame.from_dict(result["queries"][0]["data"])
+            include_index = not isinstance(df.index, pd.RangeIndex)
+            df.to_excel(buf, index=include_index)
+            filename = datetime.now().strftime("%Y%m%d_%H%M%S.xlsx")
+            buf.seek(0)
+            return send_file(
+                buf,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                as_attachment=True,
+                attachment_filename=filename,
+            )
+
         if result_format == ChartDataResultFormat.JSON:
             response_data = simplejson.dumps(
                 {"result": result["queries"]},
@@ -395,9 +413,11 @@ class ChartDataRestApi(ChartRestApi):
 
         return self._send_chart_response(result, form_data, datasource)
 
+
     # pylint: disable=invalid-name, no-self-use
     def _load_query_context_form_from_cache(self, cache_key: str) -> Dict[str, Any]:
         return QueryContextCacheLoader.load(cache_key)
+
 
     # pylint: disable=no-self-use
     def _create_query_context_from_form(
